@@ -1,12 +1,13 @@
 import tkinter as tk
-from fpdf import FPDF
 from tkinter import ttk, messagebox
 from tkcalendar import DateEntry
 from PIL import Image, ImageTk
 from tkinter import filedialog
-import funcionalidades  # Assumindo que você está importando as funções de funcionalidades.py
-import pdf_utils  # Caso precise importar também para gerar o PDF
+import funcionalidades  # Supondo que as funções estejam neste arquivo
+import pdf_utils  # Caso precise importar para gerar o PDF
 import webbrowser  # Para abrir links no navegador
+import os  # Para verificar a existência dos arquivos
+
 
 def criar_layout(root):
     # Criar o frame principal
@@ -20,10 +21,12 @@ def criar_layout(root):
     frame_right = tk.Frame(frame_principal, bg="#F9F9F9")
     frame_right.grid(row=0, column=1, padx=40, pady=0)
 
-    # Função para carregar e redimensionar a logo
+    # Função para carregar o logo
     def carregar_logo():
         try:
-            logo_path = "logo.png"  # Caminho para o arquivo da logo
+            logo_path = "C:/RpaCompras/img/logo.png"  # Caminho absoluto
+            if not os.path.exists(logo_path):
+                raise FileNotFoundError(f"O arquivo de logo não foi encontrado: {logo_path}")
             logo = Image.open(logo_path)
             nova_largura = 400
             altura_logo = int((nova_largura / logo.width) * logo.height)
@@ -34,11 +37,11 @@ def criar_layout(root):
             messagebox.showerror("Erro", f"Não foi possível carregar a logo: {e}")
             return None
 
-    # Exibir a logo no topo esquerdo da janela principal
+    # Exibir a logo
     logo_image = carregar_logo()
-    if logo_image:  # Somente exibe se a logo foi carregada com sucesso
+    if logo_image:
         label_logo = ttk.Label(root, image=logo_image, background="#F9F9F9")
-        label_logo.image = logo_image  # Armazena a referência para evitar garbage collection
+        label_logo.image = logo_image
         label_logo.place(x=10, y=10, anchor="nw")
 
     # Campos dentro do frame_left
@@ -79,66 +82,66 @@ def criar_layout(root):
     tree_produtos = ttk.Treeview(frame_right, columns=("Nome", "Preço", "Fornecedor", "Link"), show="headings")
     tree_produtos.heading("Nome", text="Nome")
     tree_produtos.heading("Preço", text="Preço")
-    tree_produtos.heading("Fornecedor", text="Fornecedor")  # Coluna para o fornecedor
-    tree_produtos.heading("Link", text="Link")  # Coluna para o link do produto
+    tree_produtos.heading("Fornecedor", text="Fornecedor")
+    tree_produtos.heading("Link", text="Link")
     tree_produtos.grid(row=1, column=0, columnspan=3, pady=15, sticky="nsew")
 
-    # Botão para buscar produtos
-    btn_buscar = ttk.Button(frame_right, text="Buscar Produtos", command=lambda: funcionalidades.exibir_resultados(entry_produto, tree_produtos))
-    btn_buscar.grid(row=0, column=2, pady=15)
-    # Função para abrir o link no navegador
-    def abrir_link(event):
-        # Obter o item selecionado na árvore
-        item = tree_produtos.selection()
-        if item:
-            # Obter os valores do item selecionado
-            item_values = tree_produtos.item(item)["values"]
-            # O link está na quarta coluna (índice 3)
-            link = item_values[3]
-            # Verificar se o link não está vazio e abrir no navegador
-            if link:
-                webbrowser.open(link)
-            else:
-                messagebox.showwarning("Link inválido", "Este produto não possui um link válido.")
+    # Campos para inserir produto manualmente
+    label_nome_manual = ttk.Label(frame_right, text="Nome do Produto:")
+    label_nome_manual.grid(row=2, column=0, sticky="w", pady=15)
+    entry_nome_manual = ttk.Entry(frame_right, width=35, style="TEntry")
+    entry_nome_manual.grid(row=2, column=1, pady=15)
 
-    # Vincule o evento de duplo clique na árvore tree_produtos para abrir o link
-    tree_produtos.bind("<Double-1>", abrir_link)
+    label_fornecedor_manual = ttk.Label(frame_right, text="Fornecedor:")
+    label_fornecedor_manual.grid(row=3, column=0, sticky="w", pady=15)
+    entry_fornecedor_manual = ttk.Entry(frame_right, width=35, style="TEntry")
+    entry_fornecedor_manual.grid(row=3, column=1, pady=15)
+
+    label_link_manual = ttk.Label(frame_right, text="Link / Celular (opcional):")
+    label_link_manual.grid(row=4, column=0, sticky="w", pady=15)
+    entry_link_manual = ttk.Entry(frame_right, width=35, style="TEntry")
+    entry_link_manual.grid(row=4, column=1, pady=15)
+
+    # Função para adicionar o produto manual ao orçamento
+    def adicionar_produto_manual():
+        nome = entry_nome_manual.get()
+        fornecedor = entry_fornecedor_manual.get()
+        link = entry_link_manual.get()
+
+        if not nome or not fornecedor:
+            messagebox.showwarning("Campos obrigatórios", "Por favor, preencha o nome e o fornecedor do produto.")
+            return
+        
+        # Inserir o produto na árvore do orçamento
+        tree_orcamento.insert("", "end", values=(nome, "", fornecedor, link))
+
+        # Limpar os campos de entrada
+        entry_nome_manual.delete(0, tk.END)
+        entry_fornecedor_manual.delete(0, tk.END)
+        entry_link_manual.delete(0, tk.END)
+
+    # Função para adicionar produto da pesquisa ao orçamento
+    def adicionar_ao_orcamento():
+        selected_item = tree_produtos.selection()
+        if not selected_item:
+            messagebox.showwarning("Seleção", "Selecione um produto para adicionar.")
+            return
+        
+        item = tree_produtos.item(selected_item)
+        produto = item["values"]
+
+        # Adicionar ao orçamento
+        tree_orcamento.insert("", "end", values=(produto[0], produto[1], produto[2], produto[3]))
 
     # Árvore para exibir produtos no orçamento
     tree_orcamento = ttk.Treeview(frame_right, columns=("Nome", "Preço", "Fornecedor", "Link"), show="headings")
     tree_orcamento.heading("Nome", text="Nome")
     tree_orcamento.heading("Preço", text="Preço")
     tree_orcamento.heading("Fornecedor", text="Fornecedor")
-    tree_orcamento.heading("Link", text="Link")  # Coluna para o link do produto
-    tree_orcamento.grid(row=4, column=0, columnspan=3, pady=15, sticky="nsew")
+    tree_orcamento.heading("Link", text="Link")
+    tree_orcamento.grid(row=6, column=0, columnspan=3, pady=15, sticky="nsew")
 
-    # Função para adicionar um produto ao orçamento
-    def adicionar_ao_orcamento():
-        selected_item = tree_produtos.selection()
-        if not selected_item:
-            messagebox.showwarning("Seleção inválida", "Por favor, selecione um produto para adicionar ao orçamento.")
-            return
-        item_values = tree_produtos.item(selected_item)["values"]
-        
-        nome = item_values[0]    # Nome do produto
-        preco = item_values[1]   # Preço do produto
-        fornecedor = item_values[2]  # Fornecedor do produto
-        link = item_values[3]    # Link do produto
-        tree_orcamento.insert("", "end", values=(nome, preco, fornecedor, link))
-
-    # Função para remover o produto ao dar um duplo clique
-    def remover_do_orcamento(event):
-        selected_item = tree_orcamento.selection()
-        if not selected_item:
-            return
-        confirm = messagebox.askyesno("Remover Produto", "Tem certeza que deseja remover o produto selecionado?")
-        if confirm:
-            for item in selected_item:
-                tree_orcamento.delete(item)
-
-    # Vincule o evento de duplo clique para remover itens
-    tree_orcamento.bind("<Double-1>", remover_do_orcamento)
-
+    # Função para gerar orçamento (PDF)
     def gerar_orcamento():
         if not tree_orcamento.get_children():
             messagebox.showwarning("Orçamento Vazio", "Não há produtos no orçamento para gerar.")
@@ -156,12 +159,38 @@ def criar_layout(root):
         except Exception as e:
             messagebox.showerror("Erro ao Gerar PDF", f"Erro ao gerar o PDF: {e}")
 
-    # Botões para adicionar e gerar orçamento
-    btn_adicionar = ttk.Button(frame_right, text="Adicionar ao Orçamento", command=adicionar_ao_orcamento)
-    btn_adicionar.grid(row=3, column=0, columnspan=3, pady=15)
+    # Função para abrir o link ao dar duplo clique
+    def abrir_link(event):
+        item = tree_produtos.selection()
+        if item:
+            produto = tree_produtos.item(item)["values"]
+            link = produto[3]  # O link está na quarta coluna
+            if link:
+                webbrowser.open(link)
+
+    # Função para remover produto do orçamento ao dar duplo clique
+    def remover_produto(event):
+        item = tree_orcamento.selection()
+        if item:
+            tree_orcamento.delete(item)
+
+    # Conectar eventos de duplo clique
+    tree_produtos.bind("<Double-1>", abrir_link)
+    tree_orcamento.bind("<Double-1>", remover_produto)
+
+   # Botões para adicionar produto manual e adicionar ao orçamento
+    btn_adicionar_ao_orcamento = ttk.Button(frame_right, text="Adicionar ao Orçamento", command=adicionar_ao_orcamento)
+    btn_adicionar_ao_orcamento.grid(row=5, column=1, pady=15, sticky="ew")  # Alterado para usar a largura total
+    
+    btn_adicionar_manual = ttk.Button(frame_right, text="Adicionar Produto Manual", command=adicionar_produto_manual)
+    btn_adicionar_manual.grid(row=5, column=2, pady=15, padx=10, sticky="ew")  # Ao lado do botão "Adicionar ao Orçamento"
 
     btn_gerar_orcamento = ttk.Button(frame_right, text="Gerar Orçamento", command=gerar_orcamento)
-    btn_gerar_orcamento.grid(row=5, column=0, columnspan=3, pady=15)
+    btn_gerar_orcamento.grid(row=7, column=0, columnspan=3, pady=15)
+
+    # Botão para buscar produtos
+    btn_buscar = ttk.Button(frame_right, text="Buscar Produtos", command=lambda: funcionalidades.exibir_resultados(entry_produto, tree_produtos))
+    btn_buscar.grid(row=0, column=2, pady=15)
 
     # Retornar os widgets importantes
-    return frame_left, frame_right, entry_produto, tree_produtos, tree_orcamento, entry_solicitacao_numero, entry_solicitacao_data, entry_solicitante, entry_comprador, entry_justificativa, btn_buscar, btn_adicionar, btn_gerar_orcamento
+    return frame_left, frame_right, entry_produto, tree_produtos, tree_orcamento, entry_solicitacao_numero, entry_solicitacao_data, entry_solicitante, entry_comprador, entry_justificativa, btn_buscar, btn_adicionar_ao_orcamento, btn_gerar_orcamento

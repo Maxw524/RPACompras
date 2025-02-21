@@ -2,14 +2,20 @@ import os
 from fpdf import FPDF
 from tkinter import filedialog, messagebox
 
-def gerar_orcamento_pdf(tree_orcamento, data_solicitacao, justificativa, comprador , solicitante, numeroDaSolicitacao):
+def gerar_orcamento_pdf(tree_orcamento, data_solicitacao, justificativa, comprador, solicitante, numeroDaSolicitacao):
     if not tree_orcamento.get_children():
         raise ValueError("Não há produtos no orçamento para gerar.")
     
     class CustomPDF(FPDF):
         def header(self):
-            # Logo (se necessário)
-            self.image("logo.png", 10, 8, 33)
+            logo_path = "C:/RpaCompras/img/logo.png"
+            # Verificar se o arquivo de logo existe
+            if os.path.exists(logo_path):
+                self.image(logo_path, 10, 8, 33)  # Caminho correto da logo
+            else:
+                messagebox.showerror("Erro", f"O arquivo de logo '{logo_path}' não foi encontrado!")
+                return
+
             self.set_font("Arial", style="B", size=12)  # Tamanho reduzido do cabeçalho
             self.cell(0, 10, "SOLICITAÇÃO DE COMPRAS", ln=True, align="C")
             self.ln(5)
@@ -26,7 +32,6 @@ def gerar_orcamento_pdf(tree_orcamento, data_solicitacao, justificativa, comprad
     # Numero da solicitação
     pdf.cell(0, 8, f"Numero Solicitação: {numeroDaSolicitacao}", ln=True)
     pdf.ln(5)
-
 
     # Adiciona o campo Justificativa
     pdf.cell(30, 8, "Solicitante:", border=1)

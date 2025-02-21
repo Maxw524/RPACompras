@@ -9,7 +9,7 @@ from layout import criar_layout
 def main():
     root = tk.Tk()
     root.title("Gerador de Orçamento")
-    root.geometry("1500x800")
+    root.geometry("1500x850")
     root.config(bg="#F9F9F9")
 
     # Criar o layout
